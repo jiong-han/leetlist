@@ -21,6 +21,7 @@ type problemListResponse struct {
 }
 
 type QuestionDetail struct {
+	ID         string  `json:"frontendQuestionId"`
 	AcRate     float64 `json:"acRate"`
 	Difficulty string  `json:"difficulty"`
 	Freq       float64 `json:"freqBar"`
@@ -32,6 +33,7 @@ type QuestionDetail struct {
 
 func (qd QuestionDetail) AsStringArr() []string {
 	arr := []string{
+		qd.ID,
 		qd.Title,
 		fmt.Sprintf("%f", qd.AcRate),
 		qd.Difficulty,

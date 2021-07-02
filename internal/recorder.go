@@ -18,7 +18,7 @@ func NewRecorder(ch chan QuestionDetail) (Recorder, error) {
 	}
 
 	writer := csv.NewWriter(file)
-	err = writer.Write([]string{"title", "acRate", "difficulty", "freq", "likes", "dislikes", "link"})
+	err = writer.Write([]string{"#", "title", "acRate", "difficulty", "freq", "likes", "dislikes", "link"})
 	if err != nil {
 		return Recorder{}, err
 	}
