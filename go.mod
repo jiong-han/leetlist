@@ -1,3 +1,3 @@
-module github.com/jionghann/leetcode-like-dislike
+module github.com/jionghann/leetlist
 
 go 1.16

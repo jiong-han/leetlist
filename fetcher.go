@@ -1,4 +1,4 @@
-package internal
+package leetlist
 
 import (
 	"bytes"
@@ -11,28 +11,29 @@ import (
 )
 
 const (
-	graphQLEndpoint   = "https://leetcode.com/graphql"
-	questionDetailGql = "{\"operationName\":\"questionData\",\"variables\":{\"titleSlug\":\"%s\"},\"query\":\"query questionData($titleSlug: String!) {\\n  question(titleSlug: $titleSlug) {\\n    likes\\n    dislikes\\n  }\\n}\\n\"}"
-	problemSetGql     = "{\"query\":\"\\n    query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {\\n  problemsetQuestionList: questionList(\\n    categorySlug: $categorySlug\\n    limit: $limit\\n    skip: $skip\\n    filters: $filters\\n  ) {\\n    total: totalNum\\n    questions: data {\\n      likes\\n      dislikes\\n      acRate\\n      difficulty\\n      freqBar\\n      frontendQuestionId: questionFrontendId\\n      isFavor\\n      paidOnly: isPaidOnly\\n      status\\n      title\\n      titleSlug\\n      topicTags {\\n        name\\n        id\\n        slug\\n      }\\n      hasSolution\\n      hasVideoSolution\\n    }\\n  }\\n}\\n    \",\"variables\":{\"categorySlug\":\"\",\"skip\":%d,\"limit\":%d,\"filters\":{}}}"
+	graphQLEndpoint = "https://leetcode.com/graphql"
+	problemSetGql   = "{\"query\":\"\\n    query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {\\n  problemsetQuestionList: questionList(\\n    categorySlug: $categorySlug\\n    limit: $limit\\n    skip: $skip\\n    filters: $filters\\n  ) {\\n    total: totalNum\\n    questions: data {\\n      likes\\n      dislikes\\n      acRate\\n      difficulty\\n      freqBar\\n      frontendQuestionId: questionFrontendId\\n      isFavor\\n      paidOnly: isPaidOnly\\n      status\\n      title\\n      titleSlug\\n      topicTags {\\n        name\\n        id\\n        slug\\n      }\\n      hasSolution\\n      hasVideoSolution\\n    }\\n  }\\n}\\n    \",\"variables\":{\"categorySlug\":\"\",\"skip\":%d,\"limit\":%d,\"filters\":{}}}"
 )
 
-type Fetcher struct {
+type fetcher struct {
 	cookie string
 	client http.Client
-	ch     chan QuestionDetail
+	ch     chan Question
+	filter Filter
 }
 
-func NewFetcher(cookie string, ch chan QuestionDetail) Fetcher {
-	return Fetcher{
+func NewFetcher(cookie string, ch chan Question, filter Filter) fetcher {
+	return fetcher{
 		cookie: cookie,
 		client: http.Client{
 			Timeout: 3 * time.Second,
 		},
-		ch: ch,
+		ch:     ch,
+		filter: filter,
 	}
 }
 
-func (f *Fetcher) Fetch() error {
+func (f *fetcher) fetch() error {
 	skip := 0
 	limit := 200
 	interval := time.Second
@@ -61,7 +62,7 @@ func (f *Fetcher) Fetch() error {
 
 		for _, q := range resp.Data.ProblemSet.Questions {
 			log.Printf("checking questions: %s", q.Title)
-			if q.Likes > q.Dislikes {
+			if f.filter(q) {
 				f.ch <- q
 			}
 		}
@@ -77,7 +78,7 @@ func (f *Fetcher) Fetch() error {
 
 }
 
-func (f *Fetcher) sendRequest(url, reqBody string) ([]byte, error) {
+func (f *fetcher) sendRequest(url, reqBody string) ([]byte, error) {
 	requestBody := bytes.NewBuffer([]byte(reqBody))
 	req, err := http.NewRequest(http.MethodPost, url, requestBody)
 	if err != nil {

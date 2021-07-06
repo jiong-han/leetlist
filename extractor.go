@@ -1,42 +1,42 @@
-package main
+package leetlist
 
 import (
+	"errors"
 	"log"
 	"os"
 	"sync"
-
-	"github.com/jionghann/leetcode-like-dislike/internal"
 )
 
-func main() {
+func Extract(filePath string, filterFunc Filter) error {
 	wg := &sync.WaitGroup{}
 	cookie := os.Getenv("cookie")
 	if len(cookie) == 0 {
-		log.Panic("cookie required")
-		return
+		return errors.New("error cookie noshow")
 	}
 
-	ch := make(chan internal.QuestionDetail)
-	fetcher := internal.NewFetcher(cookie, ch)
-	recorder, err := internal.NewRecorder(ch)
+	ch := make(chan Question)
+	fetcher := NewFetcher(cookie, ch, filterFunc)
+	recorder, err := NewRecorder(filePath, ch)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		log.Println("start recording...")
-		if err := recorder.Record(); err != nil {
+		if err := recorder.record(); err != nil {
 			log.Println("recorder error: ", err)
 		}
 	}()
 
 	log.Println("start fetching...")
-	if err := fetcher.Fetch(); err != nil {
+	if err := fetcher.fetch(); err != nil {
 		log.Println("fetcher error: ", err)
 	}
 
 	close(ch)
 	wg.Wait()
+
+	return nil
 }

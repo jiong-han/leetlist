@@ -1,4 +1,4 @@
-package internal
+package leetlist
 
 import (
 	"encoding/csv"
@@ -6,30 +6,30 @@ import (
 	"os"
 )
 
-type Recorder struct {
+type recorder struct {
 	writer *csv.Writer
-	ch     chan QuestionDetail
+	ch     chan Question
 }
 
-func NewRecorder(ch chan QuestionDetail) (Recorder, error) {
-	file, err := os.Create("./list.csv")
+func NewRecorder(filePath string, ch chan Question) (recorder, error) {
+	file, err := os.Create(filePath)
 	if err != nil {
-		return Recorder{}, err
+		return recorder{}, err
 	}
 
 	writer := csv.NewWriter(file)
 	err = writer.Write([]string{"#", "title", "acRate", "difficulty", "freq", "likes", "dislikes", "link"})
 	if err != nil {
-		return Recorder{}, err
+		return recorder{}, err
 	}
 
-	return Recorder{
+	return recorder{
 		writer: writer,
 		ch:     ch,
 	}, nil
 }
 
-func (r *Recorder) Record() error {
+func (r *recorder) record() error {
 	for qd := range r.ch {
 
 		log.Printf("Recorder processing: %s", qd.Title)
